@@ -37,10 +37,20 @@ async function resolveAtlasDoH(domain) {
   return { hosts, authOpts };
 }
 
-let isConnected = false;
+// Globally disable Mongoose buffering so disconnected operations fail instantly instead of hanging
+mongoose.set('bufferCommands', false);
 
 async function connectToMongo() {
-  if (isConnected) return;
+  // readyState 1 means strictly connected
+  if (mongoose.connection.readyState === 1) return;
+  
+  // If currently connecting (readyState 2), wait for it to finish rather than throwing or duplicating
+  if (mongoose.connection.readyState === 2) {
+      await new Promise(resolve => {
+          mongoose.connection.once('connected', resolve);
+      });
+      return;
+  }
   try {
     let uri = process.env.MONGO_URI || '';
     
@@ -62,10 +72,8 @@ async function connectToMongo() {
     }
     
     await mongoose.connect(uri, { 
-        serverSelectionTimeoutMS: 5000,
-        bufferCommands: false  // Stops the 10-second hang timeout
+        serverSelectionTimeoutMS: 5000
     });
-    isConnected = true;
     console.log('Successfully connected to MongoDB Atlas!');
   } catch (err) {
     console.error('MongoDB connection error:', err.message);
