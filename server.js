@@ -39,11 +39,14 @@ async function resolveAtlasDoH(domain) {
   return { hosts, authOpts };
 }
 
+let isConnected = false;
+
 async function connectToMongo() {
+  if (isConnected) return;
   try {
     let uri = process.env.MONGO_URI || '';
     
-    // Only use the DoH bypass locally (Windows). Vercel (AWS Linux) resolves SRV natively perfectly.
+    // Only use the DoH bypass locally (Windows).
     if (process.env.NODE_ENV !== 'production' && uri.startsWith('mongodb+srv://')) {
       console.log('Resolving Atlas bypassing Windows DNS block...');
       const match = uri.match(/^mongodb\+srv:\/\/(.+?:.+?)@([^/]+)\/(.*?)$/);
@@ -60,14 +63,21 @@ async function connectToMongo() {
       uri = `mongodb://${credentials}@${hosts}/${dbName}?${finalQuery}`;
     }
     
-    await mongoose.connect(uri);
-    console.log('Successfully connected to MongoDB Atlas (DNS Bypassed)!');
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+    isConnected = true;
+    console.log('Successfully connected to MongoDB Atlas!');
   } catch (err) {
     console.error('MongoDB connection error:', err.message);
   }
 }
 
-connectToMongo();
+// Ensure the database is connected BEFORE processing any API request (Vercel Serverless Fix)
+app.use(async (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        await connectToMongo();
+    }
+    next();
+});
 
 // Only listen locally, Vercel will process requests through the exported app
 if (process.env.NODE_ENV !== 'production') {
