@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MongoDB Indexing & CRUD | PostLab</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Particle JS Background -->
+  <div id="particles-js"></div>
+  
+  <!-- Mouse Trailer -->
+  <div id="mouse-trailer" class="mouse-trailer"></div>
+
+  <!-- Animated Background Blobs (Kept subtle for depth) -->
+  <div class="blob-wrapper">
+    <div class="blob blob1"></div>
+    <div class="blob blob2"></div>
+    <div class="blob blob3"></div>
+  </div>
+
+  <header>
+    <div class="header-content">
+      <div style="flex:1;"></div>
+      <div class="header-titles" style="flex:2;">
+        <h1>Database Interface</h1>
+        <p>MongoDB Mongoose Implementation with Advanced Indexing</p>
+      </div>
+      <div style="flex:1; display:flex; justify-content: flex-end; align-items: start;">
+        <button id="theme-toggle" class="icon-button" title="Toggle Theme">
+          <i class="fas fa-moon" id="theme-icon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Search and Query Panel -->
+    <div class="glass-panel main-panel" style="position: relative; z-index: 5;">
+      
+      <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 2rem;">
+         <h2 class="panel-title" style="margin:0;"><i class="fas fa-search"></i> Advanced Querying</h2>
+         <button class="btn-primary add-user-btn" id="open-modal-btn"><i class="fas fa-user-plus"></i> Add New User</button>
+      </div>
+      
+      <div class="form-group" style="display: flex; gap: 1rem; align-items: flex-end;">
+        <div style="flex: 1.5;">
+          <label for="searchType">Query By</label>
+          <select id="searchType" class="glass-input">
+            <option value="all">All Users</option>
+            <option value="name">Name (Single Index)</option>
+            <option value="email-age">Email & Age (Compound Index)</option>
+            <option value="hobbies">Hobbies (Multikey Index)</option>
+            <option value="bioSearch">Bio (Text Index)</option>
+          </select>
+        </div>
+        <div style="flex: 2;" id="searchInputContainer">
+          <label for="searchValue">Search Term</label>
+          <input type="text" id="searchValue" class="glass-input" placeholder="Enter keyword...">
+        </div>
+        <div style="flex: 1; display: none;" id="searchAgeContainer">
+            <label for="searchAge">Age</label>
+            <input type="number" id="searchAge" class="glass-input" placeholder="Age">
+        </div>
+        <div>
+          <button type="button" class="btn-primary" id="search-btn" style="padding: 0.8rem 1.5rem;"><i class="fas fa-search"></i> Search</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 1rem; display: flex; align-items: center; justify-content: space-between;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text-secondary);">
+          <input type="checkbox" id="explain-check" style="width: auto;">
+          <span>Show DB Execution Stats (.explain)</span>
+        </label>
+      </div>
+
+      <!-- Execution Stats Box with Typewriter -->
+      <div id="stats-box" class="stats-container hidden">
+        // Query Execution Plan
+        <div id="stats-content"></div>
+      </div>
+
+      <hr style="border: 0; border-top: 1px dashed var(--glass-border); margin: 2.5rem 0;">
+
+      <div style="display:flex; justify-content: space-between; align-items:flex-end;">
+        <h2 class="panel-title" style="margin-bottom: 0; border-bottom: none;"><i class="fas fa-users"></i> User Directory <span id="user-count" style="font-size:1rem; color:var(--accent-1); margin-left: 0.5rem;">...</span></h2>
+        
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button id="view-grid" class="icon-button active" title="Grid View"><i class="fas fa-th-large"></i></button>
+            <button id="view-list" class="icon-button" title="List View"><i class="fas fa-list"></i></button>
+        </div>
+      </div>
+      
+      <div id="users-loader" class="hidden" style="padding: 2rem;"><div class="loader"></div></div>
+      <div class="users-grid" id="users-grid">
+        <!-- Render Users Here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Frosted-Glass Modal -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="glass-panel modal-content">
+      <button id="close-modal-btn" class="close-btn"><i class="fas fa-times"></i></button>
+      <h2 class="panel-title"><i class="fas fa-user-edit"></i> <span id="form-title">Add New User</span></h2>
+      
+      <form id="user-form">
+        <input type="hidden" id="user-id-input">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" class="glass-input" required placeholder="e.g. John Doe">
+        </div>
+        
+        <div class="form-group" style="display: flex; gap: 1rem;">
+          <div style="flex: 2;">
+            <label for="email">Email</label>
+            <input type="email" id="email" class="glass-input" required placeholder="john@example.com">
+          </div>
+          <div style="flex: 1;">
+            <label for="age">Age</label>
+            <input type="number" id="age" class="glass-input" required min="1" placeholder="25">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="hobbies">Hobbies (comma separated)</label>
+          <input type="text" id="hobbies" class="glass-input" placeholder="reading, gaming, hiking">
+        </div>
+
+        <div class="form-group">
+          <label for="bio">Bio</label>
+          <textarea id="bio" rows="3" class="glass-input" placeholder="Tell us about yourself..."></textarea>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary" id="submit-btn"><i class="fas fa-save"></i> Save Profile</button>
+          <button type="button" class="btn-secondary" id="cancel-btn"><i class="fas fa-times"></i> Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="notification">Notification message</div>
+
+  <!-- External Particles.js -->
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
