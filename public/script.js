@@ -178,9 +178,13 @@ async function fetchUsers() {
         url = `${API_URL}/search?${params.toString()}`;
     }
 
-    try {
+  try {
         const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
         const data = await res.json();
+
+        if (!res.ok || data.error) {
+            throw new Error(data.error || 'Database connection could not be established.');
+        }
 
         if (explainCheck.checked && sType !== 'all') {
             statsBox.classList.remove('hidden');
@@ -199,8 +203,8 @@ async function fetchUsers() {
             renderUsers(data);
         }
     } catch (err) {
-        showNotify('Failed to fetch data', 'error');
-        usersGrid.innerHTML = '';
+        showNotify(err.message, 'error');
+        usersGrid.innerHTML = `<p style="color:var(--danger); width:100%; text-align:center;">${err.message}</p>`;
     }
 }
 
