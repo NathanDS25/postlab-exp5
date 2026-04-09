@@ -18,8 +18,6 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Routes
-app.use('/api/users', userRoutes);
 
 const https = require('https');
 
@@ -73,11 +71,14 @@ async function connectToMongo() {
 
 // Ensure the database is connected BEFORE processing any API request (Vercel Serverless Fix)
 app.use(async (req, res, next) => {
-    if (req.path.startsWith('/api')) {
+    if (req.originalUrl.startsWith('/api')) {
         await connectToMongo();
     }
     next();
 });
+
+// Routes
+app.use('/api/users', userRoutes);
 
 // Only listen locally, Vercel will process requests through the exported app
 if (process.env.NODE_ENV !== 'production') {
