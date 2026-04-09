@@ -61,18 +61,26 @@ async function connectToMongo() {
       uri = `mongodb://${credentials}@${hosts}/${dbName}?${finalQuery}`;
     }
     
-    await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+    await mongoose.connect(uri, { 
+        serverSelectionTimeoutMS: 5000,
+        bufferCommands: false  // Stops the 10-second hang timeout
+    });
     isConnected = true;
     console.log('Successfully connected to MongoDB Atlas!');
   } catch (err) {
     console.error('MongoDB connection error:', err.message);
+    throw err; // Force the error up to the middleware
   }
 }
 
-// Ensure the database is connected BEFORE processing any API request (Vercel Serverless Fix)
+// Ensure the database is connected BEFORE processing any API request
 app.use(async (req, res, next) => {
     if (req.originalUrl.startsWith('/api')) {
-        await connectToMongo();
+        try {
+            await connectToMongo();
+        } catch (err) {
+            return res.status(500).json({ error: 'CRITICAL DB ERROR: ' + err.message });
+        }
     }
     next();
 });
