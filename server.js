@@ -42,13 +42,14 @@ async function resolveAtlasDoH(domain) {
 async function connectToMongo() {
   try {
     let uri = process.env.MONGO_URI || '';
-    if (uri.startsWith('mongodb+srv://')) {
+    
+    // Only use the DoH bypass locally (Windows). Vercel (AWS Linux) resolves SRV natively perfectly.
+    if (process.env.NODE_ENV !== 'production' && uri.startsWith('mongodb+srv://')) {
       console.log('Resolving Atlas bypassing Windows DNS block...');
-      // e.g. mongodb+srv://user:pass@domain.com/db?opts
       const match = uri.match(/^mongodb\+srv:\/\/(.+?:.+?)@([^/]+)\/(.*?)$/);
       const credentials = match[1];
       const domain = match[2];
-      const dbAndQuery = match[3]; // e.g. postlab-exp5?appName=Poslab
+      const dbAndQuery = match[3]; 
       
       const { hosts, authOpts } = await resolveAtlasDoH(domain);
       
